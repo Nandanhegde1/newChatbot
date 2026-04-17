@@ -2,11 +2,14 @@ export default {
   async fetch(request, env) {
     const corsHeaders = {
       "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, anthropic-beta",
+      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, x-api-key, anthropic-version, anthropic-beta",
+      "Access-Control-Max-Age": "86400",
     };
 
-    if (request.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+    if (request.method === "OPTIONS") {
+      return new Response(null, { headers: corsHeaders });
+    }
 
     try {
       const body = await request.json();
@@ -26,8 +29,9 @@ export default {
         status: response.status,
         headers: { ...corsHeaders, "Content-Type": "application/json" } 
       });
+
     } catch (e) {
-      return new Response(JSON.stringify({ error: "Worker Error: " + e.message }), { 
+      return new Response(JSON.stringify({ error: e.message }), { 
         status: 500, 
         headers: corsHeaders 
       });
