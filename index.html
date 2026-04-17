@@ -1,73 +1,46 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Claude Opus 4.5 Max</title>
+    <title>Claude Fix</title>
     <style>
-        body { font-family: sans-serif; background: #0a0e14; color: #e8eaed; height: 100vh; display: flex; flex-direction: column; margin: 0; }
-        header { padding: 1rem; border-bottom: 1px solid #2d3748; background: #151a21; color: #00d4aa; text-align: center; font-weight: bold; }
-        #chat { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
-        .msg { padding: 12px; border-radius: 10px; max-width: 80%; line-height: 1.5; }
-        .user { background: #1e3a5f; align-self: flex-end; }
-        .bot { background: #1f2630; border: 1px solid #2d3748; align-self: flex-start; }
-        .input-area { padding: 20px; background: #151a21; border-top: 1px solid #2d3748; display: flex; gap: 10px; }
-        input { flex: 1; padding: 12px; border-radius: 8px; border: 1px solid #2d3748; background: #1f2630; color: white; outline: none; }
-        button { padding: 10px 25px; background: #00d4aa; border: none; border-radius: 8px; color: #0a0e14; font-weight: bold; cursor: pointer; }
-        button:disabled { opacity: 0.5; }
+        body { background: #0a0e14; color: white; font-family: sans-serif; padding: 20px; }
+        #log { background: #000; color: #0f0; padding: 10px; font-family: monospace; height: 100px; overflow: auto; margin-bottom: 10px; }
+        input { width: 80%; padding: 10px; }
+        button { padding: 10px; background: #00d4aa; border: none; cursor: pointer; }
     </style>
 </head>
 <body>
-    <header>CLAUDE // MAX SETTINGS</header>
-    <div id="chat"></div>
-    <div class="input-area">
-        <input type="text" id="userInput" placeholder="Ask anything..." onkeypress="if(event.key==='Enter') send()">
-        <button id="sendBtn" onclick="send()">Send</button>
-    </div>
+    <div id="log">System Ready...</div>
+    <div id="display"></div>
+    <input type="text" id="msg" placeholder="Type here...">
+    <button onclick="chat()">Send</button>
 
     <script>
-        const chat = document.getElementById('chat');
-        // Double check this URL matches exactly what you see in Cloudflare
-        const WORKER_URL = 'https://newchatbot.nandanhegde1096.workers.dev';
+        const log = (t) => document.getElementById('log').innerText += "\n" + t;
+        const URL = 'https://newchatbot.nandanhegde1096.workers.dev';
 
-        async function send() {
-            const input = document.getElementById('userInput');
-            const btn = document.getElementById('sendBtn');
-            const text = input.value.trim();
-            if(!text || btn.disabled) return;
-
-            input.value = '';
-            btn.disabled = true;
-            btn.innerText = 'Wait...';
-            chat.innerHTML += `<div class="msg user">${text}</div>`;
-            chat.scrollTop = chat.scrollHeight;
-
+        async function chat() {
+            const text = document.getElementById('msg').value;
+            log("Sending to: " + URL);
+            
             try {
-                const res = await fetch(WORKER_URL, {
+                const res = await fetch(URL, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        model: 'claude-3-5-sonnet-latest', 
-                        max_tokens: 4096,
-                        messages: [{role: 'user', content: text}]
+                        model: "claude-3-5-sonnet-latest",
+                        max_tokens: 1024,
+                        messages: [{role: "user", content: text}]
                     })
                 });
-
-                if (!res.ok) {
-                    const errorMsg = await res.text();
-                    throw new Error(errorMsg || 'Server Error');
-                }
-
+                
+                log("Status: " + res.status);
                 const data = await res.json();
-                const reply = data.content?.[0]?.text || "No text returned.";
-                chat.innerHTML += `<div class="msg bot">${reply}</div>`;
+                
+                if (data.error) log("Error: " + data.error.message);
+                else document.getElementById('display').innerHTML += "<p>Claude: " + data.content[0].text + "</p>";
+                
             } catch (e) {
-                console.error(e);
-                chat.innerHTML += `<div class="msg bot" style="color: #ff6b6b;">Error: ${e.message}</div>`;
-            } finally {
-                btn.disabled = false;
-                btn.innerText = 'Send';
-                chat.scrollTop = chat.scrollHeight;
+                log("Fetch Failed: " + e.message);
             }
         }
     </script>
