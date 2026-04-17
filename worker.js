@@ -10,21 +10,18 @@ export default {
 
     try {
       const body = await request.json();
-      
       const response = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "x-api-key": env.ANTHROPIC_API_KEY,
           "anthropic-version": "2023-06-01",
-          // Added for 2026 reasoning/thinking models
-          "anthropic-beta": "max-tokens-32k-2025-12,thinking-2026-01" 
+          "anthropic-beta": "max-tokens-32k-2025-12,thinking-2026-01"
         },
         body: JSON.stringify(body)
       });
 
       const data = await response.json();
-
       return new Response(JSON.stringify(data), { 
         status: response.status,
         headers: { ...corsHeaders, "Content-Type": "application/json" } 
