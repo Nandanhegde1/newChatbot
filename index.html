@@ -5,21 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Claude Opus 4.5 Max</title>
     <style>
-        :root {
-            --bg: #0a0e14;
-            --panel: #151a21;
-            --accent: #00d4aa;
-            --text: #e8eaed;
-        }
-        body { font-family: sans-serif; background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; margin: 0; }
-        header { padding: 1rem; background: var(--panel); border-bottom: 1px solid #2d3748; text-align: center; color: var(--accent); font-weight: bold; }
+        body { font-family: sans-serif; background: #0a0e14; color: #e8eaed; height: 100vh; display: flex; flex-direction: column; margin: 0; }
+        header { padding: 1rem; border-bottom: 1px solid #2d3748; background: #151a21; color: #00d4aa; text-align: center; font-weight: bold; }
         #chat { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
         .msg { padding: 12px; border-radius: 10px; max-width: 80%; line-height: 1.5; }
         .user { background: #1e3a5f; align-self: flex-end; }
         .bot { background: #1f2630; border: 1px solid #2d3748; align-self: flex-start; }
-        .input-area { padding: 20px; background: var(--panel); display: flex; gap: 10px; }
+        .input-area { padding: 20px; background: #151a21; border-top: 1px solid #2d3748; display: flex; gap: 10px; }
         input { flex: 1; padding: 12px; border-radius: 8px; border: 1px solid #2d3748; background: #1f2630; color: white; outline: none; }
-        button { padding: 10px 25px; background: var(--accent); border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        button { padding: 10px 25px; background: #00d4aa; border: none; border-radius: 8px; color: #0a0e14; font-weight: bold; cursor: pointer; }
         button:disabled { opacity: 0.5; }
     </style>
 </head>
@@ -33,6 +27,7 @@
 
     <script>
         const chat = document.getElementById('chat');
+        // Double check this URL matches exactly what you see in Cloudflare
         const WORKER_URL = 'https://newchatbot.nandanhegde1096.workers.dev';
 
         async function send() {
@@ -58,15 +53,16 @@
                     })
                 });
 
-                const data = await res.json();
                 if (!res.ok) {
-                    throw new Error(data.error?.message || JSON.stringify(data));
+                    const errorMsg = await res.text();
+                    throw new Error(errorMsg || 'Server Error');
                 }
 
-                const reply = data.content[0].text;
+                const data = await res.json();
+                const reply = data.content?.[0]?.text || "No text returned.";
                 chat.innerHTML += `<div class="msg bot">${reply}</div>`;
             } catch (e) {
-                alert("DEBUG ERROR: " + e.message);
+                console.error(e);
                 chat.innerHTML += `<div class="msg bot" style="color: #ff6b6b;">Error: ${e.message}</div>`;
             } finally {
                 btn.disabled = false;
