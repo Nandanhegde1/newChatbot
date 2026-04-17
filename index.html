@@ -2,149 +2,69 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Claude Opus 4.5 Max</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude 2026 Max</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
-        
-        :root {
-            --bg-primary: #0a0e14;
-            --bg-secondary: #151a21;
-            --bg-tertiary: #1f2630;
-            --accent: #00d4aa;
-            --accent-hover: #00b894;
-            --text-primary: #e8eaed;
-            --text-secondary: #9ca3af;
-            --border: #2d3748;
-            --user-bg: #1e3a5f;
-            --assistant-bg: #1f2630;
-        }
-        
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'DM Sans', sans-serif; background: var(--bg-primary); color: var(--text-primary); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-        
-        header { padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: var(--bg-secondary); }
-        .logo { font-weight: 700; color: var(--accent); font-size: 1.1rem; letter-spacing: 1px; }
-
-        #chatContainer { flex: 1; overflow-y: auto; padding: 2rem 1rem; display: flex; flex-direction: column; gap: 1.5rem; }
-        .message { max-width: 85%; padding: 1rem 1.25rem; border-radius: 12px; line-height: 1.6; font-size: 0.95rem; word-wrap: break-word; }
-        .user { align-self: flex-end; background: var(--user-bg); border-bottom-right-radius: 2px; }
-        .assistant { align-self: flex-start; background: var(--assistant-bg); border-bottom-left-radius: 2px; border: 1px solid var(--border); }
-        
-        .thinking-block { background: rgba(0, 212, 170, 0.05); border-left: 2px solid var(--accent); padding: 0.75rem; margin-bottom: 1rem; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; color: var(--text-secondary); }
-        .thinking-label { color: var(--accent); font-weight: 700; font-size: 0.7rem; text-transform: uppercase; margin-bottom: 0.4rem; display: block; }
-
-        .input-area { padding: 1.5rem; background: var(--bg-secondary); border-top: 1px solid var(--border); }
-        .input-container { max-width: 900px; margin: 0 auto; display: flex; gap: 0.75rem; background: var(--bg-tertiary); padding: 0.5rem; border-radius: 12px; border: 1px solid var(--border); }
-        input { flex: 1; background: transparent; border: none; color: white; padding: 0.75rem; font-size: 1rem; outline: none; }
-        button { background: var(--accent); border: none; padding: 0.5rem 1.5rem; border-radius: 8px; color: var(--bg-primary); font-weight: 700; cursor: pointer; transition: 0.2s; }
-        button:hover { background: var(--accent-hover); }
-        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        body { font-family: 'DM Sans', sans-serif; background: #0a0e14; color: #e8eaed; height: 100vh; display: flex; flex-direction: column; margin: 0; }
+        header { padding: 1rem; border-bottom: 1px solid #2d3748; background: #151a21; text-align: center; color: #00d4aa; font-weight: bold; }
+        #chat { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
+        .msg { padding: 12px; border-radius: 10px; max-width: 80%; line-height: 1.5; }
+        .user { background: #1e3a5f; align-self: flex-end; }
+        .bot { background: #1f2630; border: 1px solid #2d3748; align-self: flex-start; }
+        .input-area { padding: 20px; background: #151a21; border-top: 1px solid #2d3748; display: flex; gap: 10px; }
+        input { flex: 1; padding: 12px; border-radius: 8px; border: 1px solid #2d3748; background: #1f2630; color: white; outline: none; }
+        button { padding: 10px 25px; background: #00d4aa; border: none; border-radius: 8px; color: #0a0e14; font-weight: bold; cursor: pointer; }
+        button:disabled { opacity: 0.5; }
     </style>
 </head>
 <body>
-    <header>
-        <div class="logo">CLAUDE // OPUS 4.5 MAX</div>
-        <button onclick="clearHistory()" style="background: transparent; color: var(--text-secondary); border: 1px solid var(--border); font-size: 0.8rem;">Clear Chat</button>
-    </header>
-
-    <div id="chatContainer"></div>
-
+    <header>CLAUDE // OPUS 4.5 MAX</header>
+    <div id="chat"></div>
     <div class="input-area">
-        <div class="input-container">
-            <input type="text" id="userInput" placeholder="Ask anything..." onkeypress="if(event.key === 'Enter') sendMessage()">
-            <button id="sendBtn" onclick="sendMessage()">Send</button>
-        </div>
+        <input type="text" id="userInput" placeholder="Ask anything..." onkeypress="if(event.key==='Enter') send()">
+        <button id="sendBtn" onclick="send()">Send</button>
     </div>
 
     <script>
-        const WORKER_URL = 'https://newchatbot.nandanhegde1096.workers.dev'; 
-        let chatHistory = JSON.parse(localStorage.getItem('opus_chat_history') || '[]');
+        const chat = document.getElementById('chat');
+        const WORKER_URL = 'https://newchatbot.nandanhegde1096.workers.dev';
 
-        function init() {
-            renderChat();
-        }
-
-        async function sendMessage() {
+        async function send() {
             const input = document.getElementById('userInput');
             const btn = document.getElementById('sendBtn');
             const text = input.value.trim();
-            
-            if (!text || btn.disabled) return;
+            if(!text || btn.disabled) return;
 
             input.value = '';
             btn.disabled = true;
-            btn.innerText = 'Wait...';
-
-            chatHistory.push({ role: 'user', content: text });
-            renderChat();
+            btn.innerText = 'Thinking...';
+            chat.innerHTML += `<div class="msg user">${text}</div>`;
+            chat.scrollTop = chat.scrollHeight;
 
             try {
-                const response = await fetch(WORKER_URL, {
+                const res = await fetch(WORKER_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        model: 'claude-3-5-sonnet-latest', 
+                        model: 'claude-3-5-sonnet-latest', // Let's get a reply first, then swap to Opus
                         max_tokens: 4096,
-                        messages: chatHistory.map(m => ({ role: m.role, content: m.content }))
+                        messages: [{role: 'user', content: text}]
                     })
                 });
 
-                const data = await response.json();
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error?.message || data.error || 'API Error');
 
-                if (!response.ok) {
-                    throw new Error(data.error?.message || data.error || 'API Error');
-                }
-                
-                const textBlock = data.content.find(b => b.type === 'text');
-                const thinkingBlock = data.content.find(b => b.type === 'thinking');
-                
-                chatHistory.push({ 
-                    role: 'assistant', 
-                    content: textBlock ? textBlock.text : "No response content.",
-                    thinking: thinkingBlock ? thinkingBlock.thinking : null
-                });
-
-                saveAndRender();
-            } catch (err) {
-                alert("Critical Error: " + err.message);
-                console.error(err);
+                const reply = data.content.find(c => c.type === 'text')?.text || "No response.";
+                chat.innerHTML += `<div class="msg bot">${reply}</div>`;
+            } catch (e) {
+                chat.innerHTML += `<div class="msg bot" style="color: #ff6b6b;">Error: ${e.message}</div>`;
             } finally {
                 btn.disabled = false;
                 btn.innerText = 'Send';
+                chat.scrollTop = chat.scrollHeight;
             }
         }
-
-        function saveAndRender() {
-            localStorage.setItem('opus_chat_history', JSON.stringify(chatHistory));
-            renderChat();
-        }
-
-        function renderChat() {
-            const container = document.getElementById('chatContainer');
-            container.innerHTML = chatHistory.map(msg => `
-                <div class="message ${msg.role}">
-                    ${msg.thinking ? `
-                        <div class="thinking-block">
-                            <span class="thinking-label">Internal Reasoning</span>
-                            ${msg.thinking}
-                        </div>
-                    ` : ''}
-                    <div class="text-content">${msg.content.replace(/\n/g, '<br>')}</div>
-                </div>
-            `).join('');
-            container.scrollTop = container.scrollHeight;
-        }
-
-        function clearHistory() {
-            if(confirm("Clear all messages?")) {
-                chatHistory = [];
-                localStorage.removeItem('opus_chat_history');
-                renderChat();
-            }
-        }
-
-        init();
     </script>
 </body>
 </html>
