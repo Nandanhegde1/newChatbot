@@ -1,47 +1,42 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Claude Fix</title>
+    <title>Claude 4.5 Max</title>
     <style>
         body { background: #0a0e14; color: white; font-family: sans-serif; padding: 20px; }
-        #log { background: #000; color: #0f0; padding: 10px; font-family: monospace; height: 100px; overflow: auto; margin-bottom: 10px; }
-        input { width: 80%; padding: 10px; }
-        button { padding: 10px; background: #00d4aa; border: none; cursor: pointer; }
+        #chat { height: 300px; overflow: auto; border: 1px solid #333; padding: 10px; margin-bottom: 10px; }
+        input { width: 70%; padding: 10px; background: #111; color: white; border: 1px solid #333; }
+        button { padding: 10px; background: #00d4aa; cursor: pointer; border: none; font-weight: bold; }
     </style>
 </head>
 <body>
-    <div id="log">System Ready...</div>
-    <div id="display"></div>
-    <input type="text" id="msg" placeholder="Type here...">
-    <button onclick="chat()">Send</button>
+    <div id="chat"></div>
+    <input type="text" id="in" placeholder="Ask Claude...">
+    <button onclick="ask()">Send</button>
 
     <script>
-        const log = (t) => document.getElementById('log').innerText += "\n" + t;
-        const URL = 'https://newchatbot.nandanhegde1096.workers.dev';
+        async function ask() {
+            const input = document.getElementById('in');
+            const chat = document.getElementById('chat');
+            const val = input.value;
+            chat.innerHTML += `<p><b>You:</b> ${val}</p>`;
+            input.value = '';
 
-        async function chat() {
-            const text = document.getElementById('msg').value;
-            log("Sending to: " + URL);
-            
             try {
-                const res = await fetch(URL, {
+                const res = await fetch('/api/chat', {
                     method: 'POST',
                     body: JSON.stringify({
                         model: "claude-3-5-sonnet-latest",
                         max_tokens: 1024,
-                        messages: [{role: "user", content: text}]
+                        messages: [{role: "user", content: val}]
                     })
                 });
-                
-                log("Status: " + res.status);
                 const data = await res.json();
-                
-                if (data.error) log("Error: " + data.error.message);
-                else document.getElementById('display').innerHTML += "<p>Claude: " + data.content[0].text + "</p>";
-                
+                chat.innerHTML += `<p><b>Claude:</b> ${data.content[0].text}</p>`;
             } catch (e) {
-                log("Fetch Failed: " + e.message);
+                chat.innerHTML += `<p style="color:red">Error: ${e.message}</p>`;
             }
+            chat.scrollTop = chat.scrollHeight;
         }
     </script>
 </body>
