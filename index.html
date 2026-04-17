@@ -58,7 +58,7 @@
 
     <script>
         // --- CONFIGURATION ---
-        const WORKER_URL = 'YOUR_WORKER_URL_HERE'; // <--- PASTE YOUR CLOUDFLARE URL HERE
+        const WORKER_URL = 'https://newchatbot.nandanhegde1096.workers.dev'; 
         let chatHistory = JSON.parse(localStorage.getItem('opus_chat_history') || '[]');
 
         function init() {
@@ -77,6 +77,9 @@
             try {
                 const response = await fetch(WORKER_URL, {
                     method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
                     body: JSON.stringify({
                         model: 'claude-opus-4-5',
                         max_tokens: 64000,
@@ -87,6 +90,10 @@
                 });
 
                 const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error?.message || 'API request failed');
+                }
                 
                 // Opus 4.5 content handling
                 const textBlock = data.content.find(b => b.type === 'text');
@@ -104,6 +111,7 @@
                 localStorage.setItem('opus_chat_history', JSON.stringify(chatHistory));
             } catch (err) {
                 alert("Error: " + err.message);
+                console.error("Fetch Error:", err);
             }
         }
 
