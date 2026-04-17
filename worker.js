@@ -1,40 +1,21 @@
 export default {
   async fetch(request, env) {
-    const corsHeaders = {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, x-api-key, anthropic-version, anthropic-beta",
-      "Access-Control-Max-Age": "86400",
-    };
-
-    if (request.method === "OPTIONS") {
-      return new Response(null, { headers: corsHeaders });
-    }
-
-    try {
+    const url = new URL(request.url);
+    if (url.pathname === "/api/chat") {
       const body = await request.json();
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "x-api-key": env.ANTHROPIC_API_KEY,
-          "anthropic-version": "2023-06-01",
-          "anthropic-beta": "max-tokens-32k-2025-12,thinking-2026-01"
+          "anthropic-version": "2023-06-01"
         },
         body: JSON.stringify(body)
       });
-
-      const data = await response.json();
-      return new Response(JSON.stringify(data), { 
-        status: response.status,
-        headers: { ...corsHeaders, "Content-Type": "application/json" } 
-      });
-
-    } catch (e) {
-      return new Response(JSON.stringify({ error: e.message }), { 
-        status: 500, 
-        headers: corsHeaders 
+      return new Response(await res.text(), {
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
       });
     }
+    return env.ASSETS.fetch(request);
   }
 };
