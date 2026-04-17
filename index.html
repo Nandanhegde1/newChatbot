@@ -4,39 +4,66 @@
     <title>Claude 4.5 Max</title>
     <style>
         body { background: #0a0e14; color: white; font-family: sans-serif; padding: 20px; }
-        #chat { height: 300px; overflow: auto; border: 1px solid #333; padding: 10px; margin-bottom: 10px; }
-        input { width: 70%; padding: 10px; background: #111; color: white; border: 1px solid #333; }
-        button { padding: 10px; background: #00d4aa; cursor: pointer; border: none; font-weight: bold; }
+        #chat { height: 400px; overflow-y: auto; border: 1px solid #333; padding: 15px; margin-bottom: 15px; border-radius: 8px; background: #151a21; }
+        .input-area { display: flex; gap: 10px; }
+        input { flex: 1; padding: 12px; background: #111; color: white; border: 1px solid #333; border-radius: 5px; outline: none; }
+        button { padding: 10px 25px; background: #00d4aa; color: #0a0e14; cursor: pointer; border: none; font-weight: bold; border-radius: 5px; }
+        button:disabled { opacity: 0.5; }
+        .user { color: #00d4aa; margin-bottom: 10px; }
+        .bot { color: #e8eaed; margin-bottom: 20px; border-bottom: 1px solid #2d3748; padding-bottom: 10px; }
     </style>
 </head>
 <body>
+    <h3>CLAUDE OPUS 4.5</h3>
     <div id="chat"></div>
-    <input type="text" id="in" placeholder="Ask Claude...">
-    <button onclick="ask()">Send</button>
+    <div class="input-area">
+        <input type="text" id="in" placeholder="Ask Claude anything..." onkeypress="if(event.key==='Enter') ask()">
+        <button id="btn" onclick="ask()">Send</button>
+    </div>
 
     <script>
+        // THIS IS YOUR LIVE WORKER URL FROM YOUR DASHBOARD
+        const WORKER_URL = 'https://newchatbot.nandanhegde1096.workers.dev';
+
         async function ask() {
             const input = document.getElementById('in');
+            const btn = document.getElementById('btn');
             const chat = document.getElementById('chat');
-            const val = input.value;
-            chat.innerHTML += `<p><b>You:</b> ${val}</p>`;
+            const val = input.value.trim();
+            
+            if(!val || btn.disabled) return;
+
+            chat.innerHTML += `<div class="user"><b>You:</b> ${val}</div>`;
             input.value = '';
+            btn.disabled = true;
+            btn.innerText = '...';
 
             try {
-                const res = await fetch('/api/chat', {
+                const res = await fetch(WORKER_URL, {
                     method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         model: "claude-3-5-sonnet-latest",
                         max_tokens: 1024,
                         messages: [{role: "user", content: val}]
                     })
                 });
+
                 const data = await res.json();
-                chat.innerHTML += `<p><b>Claude:</b> ${data.content[0].text}</p>`;
+                
+                if (data.error) {
+                    chat.innerHTML += `<div class="bot" style="color:red"><b>Error:</b> ${data.error.message || JSON.stringify(data.error)}</div>`;
+                } else {
+                    const reply = data.content[0].text;
+                    chat.innerHTML += `<div class="bot"><b>Claude:</b> ${reply}</div>`;
+                }
             } catch (e) {
-                chat.innerHTML += `<p style="color:red">Error: ${e.message}</p>`;
+                chat.innerHTML += `<div class="bot" style="color:red"><b>Fetch Error:</b> ${e.message}</div>`;
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Send';
+                chat.scrollTop = chat.scrollHeight;
             }
-            chat.scrollTop = chat.scrollHeight;
         }
     </script>
 </body>
